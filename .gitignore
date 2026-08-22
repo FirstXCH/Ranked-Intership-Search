@@ -1,1 +1,4 @@
-.venv/ 
+.venv/
+outputs/
+plan.md
+prompt_guidelines.md
