@@ -1,45 +1,36 @@
-# Work Log - FreshIntern Ranker
+# Work Log - Ranked Internship Search
 
 ## ทำไปแล้ว (Done)
-- วางโครง ETL ใน [main.py](d:/learnCode/Ranked-Internship-Search/main.py)
-- ดึงข้อมูลจาก JobThai ด้วย `requests`
-- แกะ `__NEXT_DATA__` เพื่ออ่านรายการงานจาก payload
-- ดึงข้อมูลรายละเอียดงานรายโพสต์ (description, benefits, updated_at)
-- บันทึกข้อมูลดิบไปที่ `outputs/raw_internships.csv`
-- เพิ่มการให้คะแนนคีย์เวิร์ดผู้ใช้ (`Custom_Keyword_Score`)
-- เพิ่มการคำนวณความใหม่ของโพสต์ (`Days_Ago`)
-- จัดเรียงอันดับตาม:
-  1. `Custom_Keyword_Score` มาก -> น้อย
-  2. `Days_Ago` น้อย -> มาก
-- ส่งออกผลลัพธ์ไปที่ `outputs/ranked_khonkaen_internships.csv`
-- เพิ่มไฟล์คะแนนก่อนกรองที่ `outputs/scored_all_internships.csv`
-- จัดระบบไฟล์ CSV ไปไว้โฟลเดอร์ `outputs/`
-- ปรับ `.gitignore` ให้ ignore โฟลเดอร์ outputs และไฟล์ CSV ที่ generate
-- ปรับ filter ขอนแก่นให้เช็คด้วย `province_id=06` เพื่อให้แม่นยำ
+- ปรับโครงสร้างแบบ OOP (มี `BaseScraper`)
+- รองรับการดึงหลายแหล่ง (Multi-Source): `JobThai`, `JobsDB`, `DekFukngan`, `InternTH`
+- ปรับการเชื่อมโยงแต่ละเว็บให้ถูกต้องตามโครงสร้างใหม่ (อ่าน payload, JSON, HTML)
+- เพิ่มระบบ Fallback: ค้นหาจังหวัดขอนแก่นก่อน หากได้งานรวมต่ำกว่า 100 จะค้นหากรุงเทพฯ มาต่อท้าย
+- ยกเลิกเว็บที่ไม่เสถียรหรือไม่เกี่ยวข้อง (เช่น `JobBKK` และ `ThaiJob`)
+- ปรับระบบให้คะแนนโดยนำ `description` และ `benefits` มาคิดรวมเป็นคะแนน (Score) ความละเอียด
+- คำนวณความใหม่ของโพสต์ (`Days_Ago`)
+- จัดอันดับ 100 งานที่ดีที่สุด แล้วเซฟลง `outputs/ranked_internships.csv`
+- บันทึกข้อมูลดิบทั้งหมดลง `outputs/raw_internships.csv`
+- จัดการไฟล์ใน `.gitignore` ไม่ให้ Commit ไฟล์ผลลัพธ์ (outputs) รวมถึงไฟล์ระบบอย่าง `__pycache__`
+- ลบไฟล์ทดสอบที่ไม่ใช้แล้ว
 
 ## กำลังใช้งานตอนนี้ (Current Behavior)
-- ค่าเริ่มต้นค้นหาจาก:
-  - `https://www.jobthai.com/th/jobs?jobtype=7&subjobtype=52&province=06`
-- รับคีย์เวิร์ดเพิ่มจากผู้ใช้ตอนรัน
-- ถ้าไม่กรอกคีย์เวิร์ด คะแนนจะเป็น 0 ทุกแถว (ตาม logic ปัจจุบัน)
+- ค้นหาผ่าน URL เป้าหมายในหมวดหมู่ IT ของแต่ละเว็บ:
+  - JobThai
+  - JobsDB
+  - DekFukngan (เด็กฝึกงาน.com)
+  - InternTH
+- คัดกรองผ่านการตรวจสอบ Location ที่กวาดมาได้ว่าเป็น ขอนแก่น หรือ กรุงเทพมหานคร 
+- ข้อมูลงาน raw ที่ดึงมาได้จะถูกนำมาเข้าจัดอันดับ (Ranking) ทันที เพื่อไม่ให้งานที่เกี่ยวข้องกับ IT หายไปจากการตั้งเงื่อนไขที่เข้มงวดเกินไป
 
-## ต้องทำต่อ (Next)
-- รองรับการดึงหลายหน้า (page 1..N)
-- เพิ่ม fallback ถ้าเว็บเปลี่ยนโครงสร้าง payload
-- เพิ่ม config แยกสำหรับหลายแหล่งข้อมูล (multi-source)
-- เพิ่ม deduplication งานซ้ำ (เช่นซ้ำจากลิงก์หรือ company+title)
-- เพิ่มพารามิเตอร์ CLI:
-  - จังหวัดเป้าหมาย
-  - jobtype/subjobtype
-  - จำนวนหน้าที่จะดึง
-  - รายการคีย์เวิร์ด
+## ต้องทำต่อ (Next / Future)
+- เพิ่มการดึงหน้าถัดไป (Pagination) ให้กวาดข้อมูลได้เยอะกว่าเดิมถ้าจำนวนในหน้าแรกไม่พอ
+- ทำระบบ Deduplication หากงานเดียวถูกโพสต์ในหลายๆ เว็บ (เช็คจากชื่อบริษัทและชื่อตำแหน่ง)
+- รองรับการปรับเปลี่ยนจังหวัดและหมวดหมู่การค้นหา (ผ่าน CLI Parameter)
+- รองรับการรับคีย์เวิร์ดแบบกำหนดเองเพื่อบวกคะแนน
 
 ## ยังขาด/ความเสี่ยง (Gaps & Risks)
-- พึ่งพาโครงสร้าง `__NEXT_DATA__` ของเว็บเป้าหมาย
-- ตอนนี้รันแค่หน้าเดียว (อาจพลาดงานที่อยู่หน้าถัดไป)
-- ไม่มี unit tests สำหรับ parser/filter/ranking
-- ยังไม่รองรับ retry/backoff เมื่อ request ล้มเหลวชั่วคราว
-- คะแนน keyword ยังเป็นแบบนับคำตรงตัว (exact substring) เท่านั้น
+- อาศัยโครงสร้างเว็บและ JSON ของผู้ให้บริการ หากเว็บอัปเดตอาจต้องแก้ Parser (เช่น `__NEXT_DATA__` หรือ `window.SEEK_REDUX_DATA`)
+- โค้ดยังไม่ได้ใส่ Backoff/Retry ป้องกันการโดนแบนจากการโหลดข้อมูลบ่อย
 
 ## วิธีรัน (Quick Run)
 ```powershell
@@ -48,5 +39,4 @@
 
 ## ไฟล์ผลลัพธ์
 - `outputs/raw_internships.csv`
-- `outputs/scored_all_internships.csv`
-- `outputs/ranked_khonkaen_internships.csv`
+- `outputs/ranked_internships.csv`
