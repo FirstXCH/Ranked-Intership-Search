@@ -1092,6 +1092,7 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
         const desktopScrapeBtn = document.getElementById("desktopScrapeBtn");
 
         let pollInterval = null;
+        let isScrapeActive = false;
         const API_BASE = window.location.origin.startsWith("http") ? window.location.origin : "http://localhost:8000";
 
         function closeMonitor() {{
@@ -1107,6 +1108,7 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
             monitorDot.classList.add("running");
             monitorStatusText.innerText = "กำลังเชื่อมต่อเพื่อดึงข้อมูลสด...";
             desktopScrapeBtn.disabled = true;
+            isScrapeActive = true;
 
             try {{
                 const res = await fetch(`${{API_BASE}}/api/scrape`, {{
@@ -1120,6 +1122,7 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
 
                 startPollingStatus();
             }} catch (err) {{
+                isScrapeActive = false;
                 desktopScrapeBtn.disabled = false;
                 monitorDot.classList.remove("running");
                 monitorStatusText.innerText = "ไม่สามารถเชื่อมต่อ Local Server ได้";
@@ -1176,7 +1179,8 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
                     }}
                 }}
 
-                if (!data.running) {{
+                if (!data.running && isScrapeActive) {{
+                    isScrapeActive = false;
                     clearInterval(pollInterval);
                     pollInterval = null;
                     desktopScrapeBtn.disabled = false;
