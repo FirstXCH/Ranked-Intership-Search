@@ -200,6 +200,7 @@ class ScraperRequestHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        path = parsed.path
         if path == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
