@@ -9,71 +9,110 @@ class DekFuknganScraper(BaseScraper):
         self.source_name = "dekfukngan"
         self.base_url = "https://www.xn--12cas3c2av3m3a0g7c.com"
 
-    def _fetch_html(self, url: str) -> str:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        self.province_keywords = {
+            "khon kaen": ["ขอนแก่น", "khon kaen"],
+            "ขอนแก่น": ["ขอนแก่น", "khon kaen"],
+            "bangkok": ["กรุงเทพ", "กรุงเทพมหานคร", "bangkok", "bkk"],
+            "กรุงเทพ": ["กรุงเทพ", "กรุงเทพมหานคร", "bangkok", "bkk"],
+            "กรุงเทพมหานคร": ["กรุงเทพ", "กรุงเทพมหานคร", "bangkok", "bkk"],
+            "chiang mai": ["เชียงใหม่", "chiang mai"],
+            "เชียงใหม่": ["เชียงใหม่", "chiang mai"],
+            "chon buri": ["ชลบุรี", "chon buri"],
+            "ชลบุรี": ["ชลบุรี", "chon buri"],
+            "phuket": ["ภูเก็ต", "phuket"],
+            "ภูเก็ต": ["ภูเก็ต", "phuket"],
         }
-        response = requests.get(url, headers=headers, timeout=20)
-        response.raise_for_status()
-        return response.text
 
-    def scrape(self, target_province: str, limit: int = 100) -> List[Job]:
-        print(f"[{self.source_name}] Scraping {target_province} internships...")
-        
-        # User provided URL searching everywhere
-        search_url = f"{self.base_url}/%E0%B8%84%E0%B9%89%E0%B8%99%E0%B8%AB%E0%B8%B2%E0%B8%87%E0%B8%B2%E0%B8%99?search%5Btypes%5D=3277&search%5Ballowance%5D=1&search%5Bpositions%5D%5B%5D=2840"
-        
-        try:
-            html = self._fetch_html(search_url)
+    def _matches_province(self, location: str, target_province: str) -> bool:
+        if not location:
+            return False
+        loc_lower = location.lower()
+        target_lower = target_province.strip().lower()
+        keywords = self.province_keywords.get(target_lower, [target_lower])
+        return any(kw in loc_lower for kw in keywords)
+
+    def scrape(
+        self,
+        target_province: str,
+        limit: int = 50,
+        max_pages: int = 5,
+        category: str = "it"
+    ) -> List[Job]:
+        print(f"[{self.source_name}] Scraping {target_province} (Category: {category}, Target limit: {limit})...")
+
+        all_jobs: List[Job] = []
+        seen_ids = set()
+
+        for page in range(1, max_pages + 1):
+            # ค้นหางานฝึกงานสายคอมพิวเตอร์/ไอที (position=2840) พร้อมระบบแบ่งหน้า page={page}
+            search_url = (
+                f"{self.base_url}/%E0%B8%84%E0%B9%89%E0%B8%99%E0%B8%AB%E0%B8%B2%E0%B8%87%E0%B8%B2%E0%B8%99"
+                f"?page={page}&search%5Btypes%5D=3277&search%5Ballowance%5D=1&search%5Bpositions%5D%5B%5D=2840"
+            )
+
+            try:
+                html = self._fetch_html(search_url)
+            except Exception as e:
+                print(f"[warn] [{self.source_name}] Error fetching page {page}: {e}")
+                break
+
             soup = BeautifulSoup(html, "html.parser")
-            
             job_cards = soup.find_all("div", class_="job-post-box")
             if not job_cards:
-                print(f"[{self.source_name}] No jobs found on search page.")
-                return []
-                
-            jobs: List[Job] = []
-            for card in job_cards[:limit]:
+                break
+
+            new_jobs = []
+            for card in job_cards:
                 try:
                     a_tag = card.find("a")
                     if not a_tag:
                         continue
-                    
+
                     href = a_tag.get("href", "")
+                    job_id = href.split("/")[-1]
+                    if not job_id or job_id in seen_ids:
+                        continue
+
                     job_url = href if href.startswith("http") else self.base_url + href
-                    
+
                     title_elem = card.find("div", class_="job-post-box--capacity")
                     title = title_elem.text.strip() if title_elem else "N/A"
-                    
+
                     company_elem = card.find("div", class_="job-post-box--company")
                     company = company_elem.text.strip() if company_elem else ""
-                    
+
                     location_elem = card.find("div", class_="job-post-box--location")
                     location = location_elem.text.strip() if location_elem else ""
-                    
-                    # Manual filter by province
-                    th_prov = "ขอนแก่น" if target_province == "Khon Kaen" else "กรุงเทพ"
-                    if th_prov not in location and target_province.lower() not in location.lower():
+
+                    # ตรวจสอบจังหวัดเป้าหมาย
+                    if not self._matches_province(location, target_province):
                         continue
-                    
+
                     date_elem = card.find("div", class_="job-post-box--date")
                     updated_at = date_elem.text.strip() if date_elem else ""
-                    
-                    jobs.append(Job(
-                        id=href.split("/")[-1],
+
+                    seen_ids.add(job_id)
+                    new_jobs.append(Job(
+                        id=job_id,
                         title=title,
                         company=company,
-                        location=location,
+                        location=location or target_province,
                         province=target_province,
                         url=job_url,
                         source=self.source_name,
-                        updated_at=updated_at,
+                        updated_at=updated_at or None,
                         description=title
                     ))
-                except Exception as ex:
+                except Exception:
                     pass
-            
-            return jobs
-        except Exception as e:
-            print(f"[{self.source_name}] Error scraping: {e}")
-            return []
+
+            all_jobs.extend(new_jobs)
+            print(f"  [{self.source_name}] Page {page}: found {len(new_jobs)} matching jobs (Total: {len(all_jobs)})")
+
+            if len(all_jobs) >= limit:
+                all_jobs = all_jobs[:limit]
+                break
+
+            self._throttle_delay(0.5, 1.0)
+
+        return all_jobs
