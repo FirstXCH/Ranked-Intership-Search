@@ -492,10 +492,20 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
             padding: 6px 14px;
             border-radius: 6px;
             white-space: nowrap;
-            transition: background 0.15s;
+            transition: all 0.15s;
         }}
         .apply-btn:hover {{
             background: var(--primary-hover);
+        }}
+        /* สถานะเมื่อกดเปิดดูแล้ว จะเปลี่ยนเป็นสีเทา */
+        .apply-btn.visited {{
+            background: #cbd5e1;
+            color: #475569;
+            border: 1px solid #94a3b8;
+        }}
+        .apply-btn.visited:hover {{
+            background: #94a3b8;
+            color: #1e293b;
         }}
         @media (max-width: 640px) {{
             .job-item {{
@@ -563,11 +573,39 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
         let onlyWFH = false;
         let searchQuery = "";
 
+        const VISITED_STORAGE_KEY = "ranked_internship_visited_urls";
+
+        function getVisitedUrls() {{
+            try {{
+                return JSON.parse(localStorage.getItem(VISITED_STORAGE_KEY)) || [];
+            }} catch (e) {{
+                return [];
+            }}
+        }}
+
+        function markUrlVisited(url) {{
+            try {{
+                const visited = getVisitedUrls();
+                if (!visited.includes(url)) {{
+                    visited.push(url);
+                    localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify(visited));
+                }}
+            }} catch (e) {{}}
+        }}
+
+        function handleApplyClick(btn, rawUrl) {{
+            markUrlVisited(rawUrl);
+            btn.classList.add("visited");
+            btn.innerText = "ดูแล้ว ✓";
+        }}
+
         const searchInput = document.getElementById("searchInput");
         const jobList = document.getElementById("jobList");
         const statsCount = document.getElementById("statsCount");
 
         function render() {{
+            const visitedList = getVisitedUrls();
+
             const filtered = jobs.filter(j => {{
                 if (selectedRole !== "all" && j.Role !== selectedRole) return false;
                 if (onlyKK) {{
@@ -607,6 +645,10 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
                 const kwBadge = (j.Matched_Keywords && j.Matched_Keywords !== "-") ? `<span class="badge keyword">⭐ ${{j.Matched_Keywords}}</span>` : '';
                 const wfhBadge = (j.Work_Style && j.Work_Style !== "Onsite") ? `<span class="badge blue">🏠 ${{j.Work_Style}}</span>` : '';
 
+                const isVisited = visitedList.includes(j.url);
+                const btnClass = isVisited ? "apply-btn visited" : "apply-btn";
+                const btnText = isVisited ? "ดูแล้ว ✓" : "ดูงาน ↗";
+
                 item.innerHTML = `
                     <div class="job-rank ${{idx < 3 ? 'top-rank' : ''}}">#${{idx + 1}}</div>
                     <div class="job-info">
@@ -625,7 +667,7 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
                     </div>
                     <div class="job-action">
                         <span class="job-time">🕒 ${{timeText}}</span>
-                        <a href="${{j.url}}" target="_blank" rel="noopener noreferrer" class="apply-btn">ดูงาน ↗</a>
+                        <a href="${{j.url}}" target="_blank" rel="noopener noreferrer" class="${{btnClass}}" onclick="handleApplyClick(this, '${{j.url.replace(/'/g, "\\\\'")}}')">${{btnText}}</a>
                     </div>
                 `;
                 jobList.appendChild(item);

@@ -22,6 +22,7 @@
 - **[New] Role Classification & Filter:** จำแนกสายงาน (Frontend, Backend, Fullstack, Data/AI, DevOps, QA, Mobile, UI/UX, IT Support) พร้อมตัวเลือก `--role`
 - **[New] Paid-Only & WFH Filters:** ตัวกรองเฉพาะงานที่มีเบี้ยเลี้ยง (`--paid-only`) และงาน Work From Home/Hybrid (`--wfh`)
 - **[New] Interactive HTML Dashboard:** สร้างหน้าเว็บแดชบอร์ดสรุปและค้นหาตำแหน่งงานใน `outputs/dashboard.html` เปิดดูและคลิกสมัครได้ทันที
+- **[New] ปุ่มแสดงสถานะเปิดดูแล้ว (Visited Tracking):** เมื่อคลิกปุ่มลิงก์ดูงาน ปุ่มจะเปลี่ยนเป็นสีเทาและแสดง "ดูแล้ว ✓" พร้อมบันทึกสถานะลงใน LocalStorage ของเบราว์เซอร์อัตโนมัติ
 
 ## กำลังใช้งานตอนนี้ (Current Behavior)
 - ค้นหาแบบคู่ขนาน (Parallel) ผ่าน 5 แหล่งข้อมูล:
