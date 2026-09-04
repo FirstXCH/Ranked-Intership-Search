@@ -23,6 +23,9 @@
 - **[New] Paid-Only & WFH Filters:** ตัวกรองเฉพาะงานที่มีเบี้ยเลี้ยง (`--paid-only`) และงาน Work From Home/Hybrid (`--wfh`)
 - **[New] Interactive HTML Dashboard:** สร้างหน้าเว็บแดชบอร์ดสรุปและค้นหาตำแหน่งงานใน `outputs/dashboard.html` เปิดดูและคลิกสมัครได้ทันที
 - **[New] ปุ่มแสดงสถานะเปิดดูแล้ว (Visited Tracking):** เมื่อคลิกปุ่มลิงก์ดูงาน ปุ่มจะเปลี่ยนเป็นสีเทาและแสดง "ดูแล้ว ✓" พร้อมบันทึกสถานะลงใน LocalStorage ของเบราว์เซอร์อัตโนมัติ
+- **[New] Live Scrape & Real-time Status Monitor:** ปุ่มกดดึงข้อมูลสดบนหน้าเว็บ พร้อมการ์ดรายงานสถานะแบบเรียลไทม์ทีละแหล่งข้อมูล มีตัวจับเวลา และระบบ Watchdog ตรวจจับสถานะค้างเพื่อแจ้งเตือนอย่างชัดเจน
+- **[New] Favorite System (⭐ รายการโปรด):** ปุ่มรูปดาวบันทึกงานที่สนใจลงใน LocalStorage พร้อมแท็บและชิปตัวกรองเฉพาะงานที่สนใจ และตัวนับ Badge อัปเดตทันที
+- **[New] prom-design Overhaul (Instrument Register):** ปรับแต่งหน้าเว็บตามมาตรฐานดีไซน์ระดับโปร มินิมอล ขาว-ดำ-ฟ้า ไม่มี Gradient มี Mobile Bottom Tab Bar 4 ปุ่ม, Tabular Nums, และปราศจากเครื่องหมาย em/en dash
 
 ## กำลังใช้งานตอนนี้ (Current Behavior)
 - ค้นหาแบบคู่ขนาน (Parallel) ผ่าน 5 แหล่งข้อมูล:
@@ -41,9 +44,15 @@
   3. `Score` (มากไปน้อย - ความละเอียดของเนื้อหา)
 - สร้างไฟล์ผลลัพธ์ทั้ง CSV และ Interactive HTML Dashboard
 
-## วิธีรัน (Usage & CLI Commands)
+## วิธีรัน (Usage & Commands)
 
-### 1. รันแบบพื้นฐาน (Default)
+### 0. รัน Local Web Server และ Dashboard (กดดึงข้อมูลสดผ่านเว็บได้)
+```powershell
+.\.venv\Scripts\python.exe server.py --port 8000
+```
+เปิดบราวเซอร์ไปที่ `http://localhost:8000/` เพื่อดู Dashboard และกดปุ่ม `🔄 ดึงข้อมูลสด` ได้ทันที
+
+### 1. รัน Pipeline แบบคำสั่ง CLI ทั่วไป (Default)
 ```powershell
 .\.venv\Scripts\python.exe main.py
 ```
