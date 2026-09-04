@@ -257,8 +257,8 @@ def add_recency_and_score(df: pd.DataFrame, custom_keywords: Optional[List[str]]
 
 def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "Ranked Internships Dashboard") -> None:
     """
-    สร้าง Interactive HTML Dashboard สำหรับเปิดดูในเบราว์เซอร์ได้ทันที
-    มีฟิลเตอร์ Search, Role, WFH, เบี้ยเลี้ยง และปุ่มกดลิงก์สมัครงาน
+    สร้าง Interactive HTML Dashboard สไตล์ Minimal ขาว-ดำ-ฟ้า
+    ออกแบบเป็นรายการแถวเดี่ยว (Linear List) กวาดสายตาลงมาอ่านได้ง่าย
     """
     jobs_json = df.to_json(orient="records", force_ascii=False, date_format="iso")
 
@@ -270,256 +270,365 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
     <title>{title}</title>
     <style>
         :root {{
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --surface-hover: #334155;
-            --primary: #3b82f6;
-            --primary-light: #60a5fa;
-            --accent: #10b981;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-soft: #eff6ff;
+            --primary-border: #bfdbfe;
+            --success-soft: #ecfdf5;
+            --success-text: #065f46;
+            --success-border: #a7f3d0;
         }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg);
-            color: var(--text);
+            color: var(--text-main);
             line-height: 1.5;
-            padding: 24px;
+            padding: 32px 16px;
+        }}
+        .container {{
+            max-width: 960px;
+            margin: 0 auto;
         }}
         .header {{
-            max-width: 1200px;
-            margin: 0 auto 24px auto;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-end;
             flex-wrap: wrap;
-            gap: 16px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 16px;
+            gap: 12px;
         }}
-        .header h1 {{ font-size: 26px; font-weight: 700; color: #fff; }}
-        .header h1 span {{ color: var(--primary-light); }}
+        .header h1 {{
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }}
+        .header h1 span {{
+            color: var(--primary);
+        }}
+        .header .subtitle {{
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }}
         .controls {{
-            max-width: 1200px;
-            margin: 0 auto 24px auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            margin-bottom: 20px;
         }}
-        .search-bar {{
+        .search-box {{
             width: 100%;
-            padding: 12px 18px;
+            padding: 12px 16px;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            color: #fff;
+            border-radius: 8px;
             font-size: 15px;
+            color: var(--text-main);
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.15s;
         }}
-        .search-bar:focus {{ border-color: var(--primary); }}
-        .filter-group {{
+        .search-box:focus {{
+            border-color: var(--primary);
+        }}
+        .filter-row {{
             display: flex;
-            gap: 8px;
             flex-wrap: wrap;
+            gap: 6px;
             align-items: center;
         }}
-        .filter-chip {{
-            padding: 6px 14px;
-            border-radius: 20px;
+        .filter-btn {{
             background: var(--surface);
             border: 1px solid var(--border);
-            color: var(--text-muted);
+            color: var(--text-sub);
+            padding: 6px 12px;
+            border-radius: 6px;
             font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
+            transition: all 0.15s;
             user-select: none;
-            transition: all 0.2s;
         }}
-        .filter-chip.active {{
+        .filter-btn:hover {{
+            background: #f1f5f9;
+            color: var(--text-main);
+        }}
+        .filter-btn.active {{
             background: var(--primary);
-            color: #fff;
+            color: #ffffff;
             border-color: var(--primary);
-            font-weight: 600;
         }}
-        .stats-bar {{
-            max-width: 1200px;
-            margin: 0 auto 16px auto;
+        .stats {{
+            font-size: 13px;
             color: var(--text-muted);
-            font-size: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
         }}
-        .job-grid {{
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-            gap: 16px;
-        }}
-        .job-card {{
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px;
+        /* รายการงานแบบแถวเดี่ยว กวาดสายตาลงมาอ่านได้ง่าย */
+        .job-list {{
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.2s, border-color 0.2s;
+            gap: 10px;
         }}
-        .job-card:hover {{
-            transform: translateY(-2px);
-            border-color: var(--primary-light);
+        .job-item {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: 44px 1fr auto;
+            align-items: center;
+            gap: 16px;
+            transition: border-color 0.15s, background-color 0.15s;
         }}
-        .rank-badge {{
-            display: inline-block;
-            font-size: 12px;
+        .job-item:hover {{
+            border-color: #cbd5e1;
+            background-color: #fafbfc;
+        }}
+        .job-rank {{
+            font-size: 14px;
             font-weight: 700;
-            padding: 2px 8px;
+            color: var(--text-muted);
+            text-align: center;
+            background: #f1f5f9;
+            padding: 6px 0;
             border-radius: 6px;
-            background: #1e3a8a;
-            color: #93c5fd;
-            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }}
+        .job-rank.top-rank {{
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: var(--primary-border);
+        }}
+        .job-info {{
+            min-width: 0;
         }}
         .job-title {{
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 600;
+            color: var(--text-main);
             margin-bottom: 4px;
-            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+        .job-company-row {{
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }}
         .job-company {{
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 12px;
+            font-weight: 500;
+            color: var(--text-main);
         }}
-        .tags {{
+        .tags-row {{
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
-            margin-bottom: 14px;
-        }}
-        .tag {{
-            font-size: 12px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #cbd5e1;
-        }}
-        .tag.paid {{ background: #064e3b; color: #6ee7b7; border-color: #047857; }}
-        .tag.kw {{ background: #701a75; color: #f5d0fe; border-color: #a21caf; }}
-        .tag.role {{ background: #172554; color: #93c5fd; border-color: #1e40af; }}
-        .card-footer {{
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-top: 1px solid var(--border);
-            padding-top: 12px;
-            margin-top: auto;
         }}
-        .recency {{ font-size: 12px; color: var(--text-muted); }}
+        .badge {{
+            font-size: 12px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #f1f5f9;
+            color: var(--text-sub);
+            border: 1px solid var(--border);
+        }}
+        .badge.province-kk {{
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: var(--primary-border);
+            font-weight: 600;
+        }}
+        .badge.paid {{
+            background: var(--success-soft);
+            color: var(--success-text);
+            border-color: var(--success-border);
+        }}
+        .badge.keyword {{
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }}
+        .badge.blue {{
+            background: var(--primary-soft);
+            color: var(--primary);
+            border-color: var(--primary-border);
+        }}
+        .job-action {{
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }}
+        .job-time {{
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }}
         .apply-btn {{
+            display: inline-block;
             background: var(--primary);
-            color: #fff;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
             padding: 6px 14px;
             border-radius: 6px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            transition: background 0.2s;
+            white-space: nowrap;
+            transition: background 0.15s;
         }}
-        .apply-btn:hover {{ background: var(--primary-light); }}
+        .apply-btn:hover {{
+            background: var(--primary-hover);
+        }}
+        @media (max-width: 640px) {{
+            .job-item {{
+                grid-template-columns: 36px 1fr;
+                gap: 12px;
+            }}
+            .job-action {{
+                grid-column: 2;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid var(--border);
+            }}
+        }}
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🎯 Ranked <span>Internships</span> Dashboard</h1>
-        <div style="font-size: 14px; color: var(--text-muted);">อัปเดตล่าสุด: {datetime.now().strftime('%d/%m/%Y %H:%M')}</div>
-    </div>
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1>🎯 Ranked <span>Internships</span></h1>
+                <div class="subtitle">ระบบค้นหาและจัดอันดับงานฝึกงานสายไอที (เรียงพื้นที่เป้าหมายขึ้นก่อน)</div>
+            </div>
+            <div class="subtitle">อัปเดต: {datetime.now().strftime('%d/%m/%Y %H:%M')}</div>
+        </header>
 
-    <div class="controls">
-        <input type="text" id="searchInput" class="search-bar" placeholder="🔍 ค้นหาชื่องาน, บริษัท, หรือทักษะที่ต้องการ (เช่น React, Python, เบี้ยเลี้ยง)...">
-        <div class="filter-group" id="roleFilters">
-            <span style="font-size: 13px; color: var(--text-muted);">Role:</span>
-            <div class="filter-chip active" data-role="all">ทั้งหมด</div>
-            <div class="filter-chip" data-role="Frontend">Frontend</div>
-            <div class="filter-chip" data-role="Backend">Backend</div>
-            <div class="filter-chip" data-role="Fullstack">Fullstack</div>
-            <div class="filter-chip" data-role="Data / AI">Data / AI</div>
-            <div class="filter-chip" data-role="DevOps / Cloud">DevOps</div>
-            <div class="filter-chip" data-role="QA / Tester">QA/Tester</div>
-            <div class="filter-chip" data-role="Mobile">Mobile</div>
-            <div class="filter-chip" data-role="UI / UX">UI/UX</div>
-            <div class="filter-chip" data-role="IT Support">IT Support</div>
-        </div>
-        <div class="filter-group">
-            <span style="font-size: 13px; color: var(--text-muted);">ตัวกรองพิเศษ:</span>
-            <div class="filter-chip" id="togglePaid">💰 มีเบี้ยเลี้ยง</div>
-            <div class="filter-chip" id="toggleWFH">🏠 Work From Home</div>
-        </div>
-    </div>
+        <section class="controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="พิมพ์ค้นหาตำแหน่งงาน, ชื่อบริษัท, ทักษะที่สนใจ (เช่น React, Python, Data)...">
+            <div class="filter-row" id="roleFilters">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-sub); margin-right: 4px;">สายงาน:</span>
+                <button class="filter-btn active" data-role="all">ทั้งหมด</button>
+                <button class="filter-btn" data-role="Frontend">Frontend</button>
+                <button class="filter-btn" data-role="Backend">Backend</button>
+                <button class="filter-btn" data-role="Fullstack">Fullstack</button>
+                <button class="filter-btn" data-role="Data / AI">Data / AI</button>
+                <button class="filter-btn" data-role="DevOps / Cloud">DevOps</button>
+                <button class="filter-btn" data-role="QA / Tester">QA</button>
+                <button class="filter-btn" data-role="Mobile">Mobile</button>
+                <button class="filter-btn" data-role="UI / UX">UI/UX</button>
+                <button class="filter-btn" data-role="IT Support">IT Support</button>
+            </div>
+            <div class="filter-row">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-sub); margin-right: 4px;">ตัวเลือกพิเศษ:</span>
+                <button class="filter-btn" id="filterKK">📍 เฉพาะขอนแก่น</button>
+                <button class="filter-btn" id="filterPaid">💰 มีเบี้ยเลี้ยง</button>
+                <button class="filter-btn" id="filterWFH">🏠 Work From Home</button>
+            </div>
+        </section>
 
-    <div class="stats-bar" id="statsText">กำลังโหลด...</div>
-    <div class="job-grid" id="jobGrid"></div>
+        <div class="stats">
+            <span id="statsCount">กำลังโหลดข้อมูล...</span>
+            <span>จัดเรียง: ขอนแก่นขึ้นก่อน &bull; ความตรงคีย์เวิร์ด &bull; ความใหม่</span>
+        </div>
+
+        <main class="job-list" id="jobList"></main>
+    </div>
 
     <script>
         const jobs = {jobs_json};
         let selectedRole = "all";
-        let filterPaid = false;
-        let filterWFH = false;
+        let onlyKK = false;
+        let onlyPaid = false;
+        let onlyWFH = false;
         let searchQuery = "";
 
         const searchInput = document.getElementById("searchInput");
-        const jobGrid = document.getElementById("jobGrid");
-        const statsText = document.getElementById("statsText");
+        const jobList = document.getElementById("jobList");
+        const statsCount = document.getElementById("statsCount");
 
         function render() {{
             const filtered = jobs.filter(j => {{
                 if (selectedRole !== "all" && j.Role !== selectedRole) return false;
-                if (filterPaid && !j.Is_Paid) return false;
-                if (filterWFH && j.Work_Style !== "Remote / WFH" && j.Work_Style !== "Hybrid") return false;
+                if (onlyKK) {{
+                    const prov = (j.province || j.location || "").toLowerCase();
+                    if (!prov.includes("khon kaen") && !prov.includes("ขอนแก่น")) return false;
+                }}
+                if (onlyPaid && !j.Is_Paid) return false;
+                if (onlyWFH && j.Work_Style !== "Remote / WFH" && j.Work_Style !== "Hybrid") return false;
                 if (searchQuery) {{
                     const q = searchQuery.toLowerCase();
-                    const text = (j.title + " " + j.company + " " + j.location + " " + (j.Matched_Keywords || "")).toLowerCase();
+                    const text = (j.title + " " + j.company + " " + j.location + " " + (j.Matched_Keywords || "") + " " + (j.Role || "")).toLowerCase();
                     if (!text.includes(q)) return false;
                 }}
                 return true;
             }});
 
-            statsText.innerText = `แสดงผล ${{filtered.length}} ตำแหน่งงาน (จากทั้งหมด ${{jobs.length}} รายการ)`;
-            jobGrid.innerHTML = "";
+            statsCount.innerText = `พบ ${{filtered.length}} ตำแหน่งงาน (จากทั้งหมด ${{jobs.length}} รายการ)`;
+            jobList.innerHTML = "";
 
             if (filtered.length === 0) {{
-                jobGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">ไม่พบตำแหน่งงานที่ตรงกับเงื่อนไขการค้นหา</div>';
+                jobList.innerHTML = '<div style="text-align: center; padding: 48px 16px; color: var(--text-muted); background: #ffffff; border: 1px solid var(--border); border-radius: 8px;">ไม่พบตำแหน่งงานที่ตรงกับเงื่อนไขการค้นหา</div>';
                 return;
             }}
 
-            filtered.forEach((j, index) => {{
-                const card = document.createElement("div");
-                card.className = "job-card";
+            filtered.forEach((j, idx) => {{
+                const item = document.createElement("div");
+                item.className = "job-item";
 
-                const daysText = j.Days_Ago < 999 ? (j.Days_Ago === 0 ? "วันนี้" : `${{Math.round(j.Days_Ago)}} วันที่แล้ว`) : "ไม่ระบุวัน";
-                const paidTag = j.Is_Paid ? '<span class="tag paid">💰 มีเบี้ยเลี้ยง</span>' : '';
-                const kwTag = j.Matched_Keywords && j.Matched_Keywords !== "-" ? `<span class="tag kw">⭐ ${{j.Matched_Keywords}}</span>` : '';
+                const isKK = (j.province || j.location || "").toLowerCase().includes("khon kaen") || (j.province || j.location || "").includes("ขอนแก่น");
+                const provBadgeClass = isKK ? "badge province-kk" : "badge";
+                const provText = isKK ? "📍 ขอนแก่น" : `📍 ${{j.province || j.location}}`;
 
-                card.innerHTML = `
-                    <div>
-                        <div class="rank-badge">#${{index + 1}}</div>
-                        <div class="job-title">${{j.title}}</div>
-                        <div class="job-company">🏢 ${{j.company || "ไม่ระบุบริษัท"}}</div>
-                        <div class="tags">
-                            <span class="tag role">${{j.Role || "General IT"}}</span>
-                            <span class="tag">📍 ${{j.province || j.location}}</span>
-                            <span class="tag">🌐 ${{j.source}}</span>
-                            ${{paidTag}}
-                            ${{kwTag}}
+                const daysAgo = Math.round(j.Days_Ago);
+                const timeText = j.Days_Ago < 999 ? (daysAgo === 0 ? "วันนี้" : `${{daysAgo}} วันที่แล้ว`) : "ไม่ระบุวัน";
+
+                const paidBadge = j.Is_Paid ? '<span class="badge paid">💰 มีเบี้ยเลี้ยง</span>' : '';
+                const kwBadge = (j.Matched_Keywords && j.Matched_Keywords !== "-") ? `<span class="badge keyword">⭐ ${{j.Matched_Keywords}}</span>` : '';
+                const wfhBadge = (j.Work_Style && j.Work_Style !== "Onsite") ? `<span class="badge blue">🏠 ${{j.Work_Style}}</span>` : '';
+
+                item.innerHTML = `
+                    <div class="job-rank ${{idx < 3 ? 'top-rank' : ''}}">#${{idx + 1}}</div>
+                    <div class="job-info">
+                        <div class="job-title" title="${{j.title}}">${{j.title}}</div>
+                        <div class="job-company-row">
+                            <span class="job-company">${{j.company || "ไม่ระบุชื่อบริษัท"}}</span>
+                            <span class="${{provBadgeClass}}">${{provText}}</span>
+                        </div>
+                        <div class="tags-row">
+                            <span class="badge">${{j.Role || "General IT"}}</span>
+                            <span class="badge">${{j.source}}</span>
+                            ${{paidBadge}}
+                            ${{kwBadge}}
+                            ${{wfhBadge}}
                         </div>
                     </div>
-                    <div class="card-footer">
-                        <span class="recency">🕒 ${{daysText}}</span>
-                        <a href="${{j.url}}" target="_blank" class="apply-btn">ดูรายละเอียด ↗</a>
+                    <div class="job-action">
+                        <span class="job-time">🕒 ${{timeText}}</span>
+                        <a href="${{j.url}}" target="_blank" rel="noopener noreferrer" class="apply-btn">ดูงาน ↗</a>
                     </div>
                 `;
-                jobGrid.appendChild(card);
+                jobList.appendChild(item);
             }});
         }}
 
@@ -528,26 +637,33 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
             render();
         }});
 
-        document.querySelectorAll("#roleFilters .filter-chip").forEach(chip => {{
-            chip.addEventListener("click", () => {{
-                document.querySelectorAll("#roleFilters .filter-chip").forEach(c => c.classList.remove("active"));
-                chip.classList.add("active");
-                selectedRole = chip.dataset.role;
+        document.querySelectorAll("#roleFilters .filter-btn").forEach(btn => {{
+            btn.addEventListener("click", () => {{
+                document.querySelectorAll("#roleFilters .filter-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                selectedRole = btn.dataset.role;
                 render();
             }});
         }});
 
-        const togglePaid = document.getElementById("togglePaid");
-        togglePaid.addEventListener("click", () => {{
-            filterPaid = !filterPaid;
-            togglePaid.classList.toggle("active", filterPaid);
+        const filterKK = document.getElementById("filterKK");
+        filterKK.addEventListener("click", () => {{
+            onlyKK = !onlyKK;
+            filterKK.classList.toggle("active", onlyKK);
             render();
         }});
 
-        const toggleWFH = document.getElementById("toggleWFH");
-        toggleWFH.addEventListener("click", () => {{
-            filterWFH = !filterWFH;
-            toggleWFH.classList.toggle("active", filterWFH);
+        const filterPaid = document.getElementById("filterPaid");
+        filterPaid.addEventListener("click", () => {{
+            onlyPaid = !onlyPaid;
+            filterPaid.classList.toggle("active", onlyPaid);
+            render();
+        }});
+
+        const filterWFH = document.getElementById("filterWFH");
+        filterWFH.addEventListener("click", () => {{
+            onlyWFH = !onlyWFH;
+            filterWFH.classList.toggle("active", onlyWFH);
             render();
         }});
 
@@ -557,7 +673,7 @@ def generate_html_dashboard(df: pd.DataFrame, output_path: Path, title: str = "R
 </html>"""
 
     output_path.write_text(html_content, encoding="utf-8")
-    print(f"[Phase 4] สร้าง Interactive Dashboard สำเร็จ -> {output_path}")
+    print(f"[Phase 4] สร้าง Minimal Dashboard สำเร็จ -> {output_path}")
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -763,12 +879,25 @@ def run_pipeline(args: Optional[argparse.Namespace] = None) -> None:
         scored_df = scored_df[scored_df["Work_Style"].isin(["Remote / WFH", "Hybrid"])].reset_index(drop=True)
         print(f"[Phase 3] กรองเฉพาะงาน WFH/Remote -> เหลือ {len(scored_df)} งาน")
 
-    # 6. จัดอันดับแบบ Multi-Level Ranking และส่งออก CSV
-    print(f"\n[Phase 4] จัดอันดับ (Ranking) และส่งออกไฟล์ผลลัพธ์ (Top {args.top})...")
+    # 6. จัดอันดับแบบ Multi-Level Ranking (เรียงขอนแก่นก่อนเสมอ ตามคำสั่งผู้ใช้)
+    print(f"\n[Phase 4] จัดอันดับ (Ranking) โดยเรียงงานในจังหวัด '{args.province}' ขึ้นก่อนเสมอ...")
+    target_prov = args.province.strip().lower()
+
+    def is_primary_prov(p: str) -> int:
+        plow = str(p or "").lower()
+        if target_prov in plow:
+            return 1
+        if target_prov in ["khon kaen", "ขอนแก่น"] and ("khon kaen" in plow or "ขอนแก่น" in plow):
+            return 1
+        return 0
+
+    scored_df["Is_Primary_Province"] = scored_df["province"].apply(is_primary_prov)
+
+    # จัดเรียง: 1. ขอนแก่นขึ้นก่อน 2. คีย์เวิร์ดตรงมากที่สุด 3. โพสต์ใหม่ที่สุด 4. เนื้อหาละเอียดที่สุด
     ranked_df = scored_df.sort_values(
-        by=["Custom_Keyword_Score", "Days_Ago", "Score"],
-        ascending=[False, True, False]
-    )
+        by=["Is_Primary_Province", "Custom_Keyword_Score", "Days_Ago", "Score"],
+        ascending=[False, False, True, False]
+    ).reset_index(drop=True)
 
     ranked_df = ranked_df.head(args.top)
 
